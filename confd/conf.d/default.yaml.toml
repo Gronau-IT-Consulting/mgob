@@ -1,0 +1,9 @@
+[template]
+src   = "default.yaml"
+dest  = "/config/localbckup.yaml"
+uid = 0
+gid = 0
+mode  = "0660"
+keys = [
+  "/",
+]

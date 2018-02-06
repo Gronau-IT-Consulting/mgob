@@ -1,3 +1,16 @@
+FROM golang:1.8.3-alpine as build_golang
+
+ARG APP_VERSION=unkown
+
+ADD . /go/src/github.com/stefanprodan/mgob
+
+WORKDIR /go/src/github.com/stefanprodan/mgob
+
+RUN mkdir -p /dist
+RUN go build -ldflags "-X main.version=$APP_VERSION" -o /dist/mgob github.com/stefanprodan/mgob
+
+
+
 FROM alpine:3.6
 
 ARG BUILD_DATE
@@ -6,6 +19,7 @@ ARG VERSION
 
 ENV GOOGLE_CLOUD_SDK_VERSION 181.0.0
 ENV PATH /root/google-cloud-sdk/bin:$PATH
+ENV CONFD_VERSION 0.15.0
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.name="mgob" \
@@ -22,6 +36,9 @@ ADD https://dl.minio.io/client/mc/release/linux-amd64/mc /usr/bin
 RUN chmod u+x /usr/bin/mc
 
 WORKDIR /root/
+
+COPY ./entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY ./confd /etc/confd
 
 #install gcloud
 # https://github.com/GoogleCloudPlatform/cloud-sdk-docker/blob/69b7b0031d877600a9146c1111e43bc66b536de7/alpine/Dockerfile
@@ -40,10 +57,16 @@ RUN apk --no-cache add \
     gcloud config set core/disable_usage_reporting true && \
     gcloud config set component_manager/disable_update_check true && \
     gcloud config set metrics/environment github_docker_image && \
-    gcloud --version
+    gcloud --version \
+    && curl -sSL https://github.com/kelseyhightower/confd/releases/download/v${CONFD_VERSION}/confd-${CONFD_VERSION}-linux-amd64 -o /usr/local/bin/confd \
+    && chmod +x /usr/local/bin/confd \
+        /usr/local/bin/entrypoint.sh
 
-COPY mgob    .
+COPY --from=build_golang /dist/mgob    .
 
 VOLUME ["/config", "/storage", "/tmp", "/data"]
 
-ENTRYPOINT [ "./mgob" ]
+EXPOSE 8090
+
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+CMD [ "./mgob" ]
