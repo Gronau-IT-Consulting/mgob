@@ -59,14 +59,14 @@ scheduler:
   timeout: 60
 target:
   # mongod IP or host name
-  host: "172.18.7.21"
+  host: "{{ if getenv "MONGO_HOST" }}{{ getenv "MONGO_HOST" }}{{ else }}172.18.7.21{{ end }}"
   # mongodb port
   port: 27017
   # mongodb database name, leave blank to backup all databases
-  database: "test"
+  database: "{{ if getenv "MONGO_DATABASE" }}{{ getenv "MONGO_DATABASE" }}{{ else }}test{{ end }}"
   # leave blank if auth is not enabled
-  username: "admin"
-  password: "secret"
+  username: "{{ if getenv "MONGO_USER" }}{{ getenv "MONGO_USER" }}{{ else }}admin{{ end }}"
+  password: "{{ if getenv "MONGO_PASS" }}{{ getenv "MONGO_PASS" }}{{ else }}secret{{ end }}"
   # add custom params to mongodump (eg. Auth or SSL support), leave blank if not needed
   params: "--ssl --authenticationDatabase admin"
 # S3 upload (optional)
